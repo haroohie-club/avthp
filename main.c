@@ -170,26 +170,19 @@ static int decode_packet(int *got_frame, int cached)
 
   if (pkt.stream_index == video_stream_idx) {
     /* decode video frame */
-    do {
-      if (video_dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
-          video_dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {  
-        ret = avcodec_send_packet(video_dec_ctx, &pkt);
-        if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
-        } else {
-          if (ret >= 0)
-            pkt.size = 0;
-          ret = avcodec_receive_frame(video_dec_ctx, frame);
-          if (ret >= 0)
-            got_frame = 1;
-        }
-      }
-    } while (ret == AVERROR(EAGAIN));
+    // ret = avcodec_decode_video2(video_dec_ctx, frame, got_frame, &pkt);
+    ret = avcodec_send_packet(video_dec_ctx, &pkt);
     if (ret < 0) {
-      fprintf(stderr, "Error decoding video frame (%s)\n", av_err2str(ret));
+        fprintf(stderr, "codec: sending video packet failed");
+        return ret;
+    }
+    ret = avcodec_receive_frame(video_dec_ctx, frame);
+    if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
+      fprintf(stderr, "Error receiving video frame (%s)\n", av_err2str(ret));
       return ret;
     }
 
-    if (*got_frame) {
+    if (ret >= 0) {
 
       if (frame->width != width || frame->height != height ||
           frame->format != pix_fmt) {
@@ -283,18 +276,13 @@ static int decode_packet(int *got_frame, int cached)
     }
   } else if (pkt.stream_index == audio_stream_idx) {
     /* decode audio frame */
-    if (audio_dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
-        audio_dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        ret = avcodec_send_packet(audio_dec_ctx, &pkt);
-        if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
-      } else {
-        if (ret >= 0)
-            pkt.size = 0;
-        ret = avcodec_receive_frame(audio_dec_ctx, frame);
-        if (ret >= 0)
-            got_frame = 1;
-        }
+    // ret = avcodec_decode_audio4(audio_dec_ctx, frame, got_frame, &pkt);
+    ret = avcodec_send_packet(audio_dec_ctx, &pkt);
+    if (ret < 0) {
+	    fprintf(stderr, "codec: sending audio packet failed");
+      return ret;
     }
+	  ret = avcodec_receive_frame(audio_dec_ctx, frame);
     if (ret < 0) {
       fprintf(stderr, "Error decoding audio frame (%s)\n", av_err2str(ret));
       return ret;
