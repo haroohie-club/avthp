@@ -166,15 +166,15 @@ static int decode_packet(int *got_frame, int cached)
   int ret = 0;
   int decoded = pkt.size;
 
-  *got_frame = 0;
-
   if (pkt.stream_index == video_stream_idx) {
     /* decode video frame */
-    ret = avcodec_decode_video2(video_dec_ctx, frame, got_frame, &pkt);
+    ret = avcodec_send_packet(video_dec_ctx, &pkt);
     if (ret < 0) {
       fprintf(stderr, "Error decoding video frame (%s)\n", av_err2str(ret));
       return ret;
     }
+
+    *got_frame = avcodec_receive_frame(video_dec_ctx, frame);
 
     if (*got_frame) {
 
@@ -270,11 +270,12 @@ static int decode_packet(int *got_frame, int cached)
     }
   } else if (pkt.stream_index == audio_stream_idx) {
     /* decode audio frame */
-    ret = avcodec_decode_audio4(audio_dec_ctx, frame, got_frame, &pkt);
+    ret = avcodec_send_packet(audio_dec_ctx, &pkt);
     if (ret < 0) {
       fprintf(stderr, "Error decoding audio frame (%s)\n", av_err2str(ret));
       return ret;
     }
+    *got_frame = avcodec_receive_frame(audio_dec_ctx, frame);
     /* Some audio decoders decode only part of the packet, and have to be
      * called again with the remainder of the packet data.
      * Sample: fate-suite/lossless-audio/luckynight-partial.shn
