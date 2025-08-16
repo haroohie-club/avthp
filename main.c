@@ -608,16 +608,17 @@ int main (int argc, char **argv)
         break;
       pkt.data += ret;
       pkt.size -= ret;
+      printf("Packet size: %i", pkt.size);
     } while (pkt.size > 0);
     av_packet_unref(&orig_pkt);
   }
 
   /* flush cached frames */
-  // pkt.data = NULL;
-  // pkt.size = 0;
-  // do {
-  //   decode_packet(&got_frame, 1);
-  // } while (got_frame);
+  pkt.data = NULL;
+  pkt.size = 0;
+  do {
+    decode_packet(&got_frame, 1);
+  } while (got_frame);
 
   fseek(dst_file, thp_header.firstFrameOffset + 4, SEEK_SET);
   uint32_t prev_size = av_be2ne32(last_frame_size);
