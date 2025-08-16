@@ -172,7 +172,9 @@ static int decode_packet(int *got_frame, int cached)
     /* decode video frame */
     if (video_dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
         video_dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        ret = avcodec_send_packet(video_dec_ctx, &pkt);
+        do {
+          ret = avcodec_send_packet(video_dec_ctx, &pkt);
+        } while (ret == AVERROR(EAGAIN));
         if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
       } else {
         if (ret >= 0)
@@ -182,10 +184,10 @@ static int decode_packet(int *got_frame, int cached)
             got_frame = 1;
         }
     }
-    // if (ret < 0) {
-    //   fprintf(stderr, "Error decoding video frame (%s)\n", av_err2str(ret));
-    //   return ret;
-    // }
+    if (ret < 0) {
+      fprintf(stderr, "Error decoding video frame (%s)\n", av_err2str(ret));
+      return ret;
+    }
 
     if (*got_frame) {
 
@@ -283,7 +285,9 @@ static int decode_packet(int *got_frame, int cached)
     /* decode audio frame */
     if (audio_dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
         audio_dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        ret = avcodec_send_packet(audio_dec_ctx, &pkt);
+        do {
+          ret = avcodec_send_packet(audio_dec_ctx, &pkt);
+        } while (ret == AVERROR(EAGAIN));
         if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
       } else {
         if (ret >= 0)
@@ -293,10 +297,10 @@ static int decode_packet(int *got_frame, int cached)
             got_frame = 1;
         }
     }
-    // if (ret < 0) {
-    //   fprintf(stderr, "Error decoding audio frame (%s)\n", av_err2str(ret));
-    //   return ret;
-    // }
+    if (ret < 0) {
+      fprintf(stderr, "Error decoding audio frame (%s)\n", av_err2str(ret));
+      return ret;
+    }
     /* Some audio decoders decode only part of the packet, and have to be
      * called again with the remainder of the packet data.
      * Sample: fate-suite/lossless-audio/luckynight-partial.shn
