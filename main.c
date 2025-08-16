@@ -316,9 +316,10 @@ static int decode_packet(int *got_frame, int cached)
 
   /* If we use frame reference counting, we own the data and need
    * to de-reference it when we don't use it anymore */
-  if (*got_frame)
+  if (ret)
     av_frame_unref(frame);
 
+  *got_frame = ret;
   return decoded;
 }
 
