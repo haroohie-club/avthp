@@ -172,13 +172,13 @@ static int decode_packet(int *got_frame, int cached)
     /* decode video frame */
     if (video_dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
         video_dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        used = avcodec_send_packet(video_dec_ctx, &pkt);
-        if (used < 0 && used != AVERROR(EAGAIN) && used != AVERROR_EOF) {
+        ret = avcodec_send_packet(video_dec_ctx, &pkt);
+        if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
       } else {
-        if (used >= 0)
+        if (ret >= 0)
             pkt.size = 0;
-        used = avcodec_receive_frame(video_dec_ctx, frame);
-        if (used >= 0)
+        ret = avcodec_receive_frame(video_dec_ctx, frame);
+        if (ret >= 0)
             got_frame = 1;
         }
     }
@@ -283,13 +283,13 @@ static int decode_packet(int *got_frame, int cached)
     /* decode audio frame */
     if (audio_dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
         audio_dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        used = avcodec_send_packet(audio_dec_ctx, &pkt);
-        if (used < 0 && used != AVERROR(EAGAIN) && used != AVERROR_EOF) {
+        ret = avcodec_send_packet(audio_dec_ctx, &pkt);
+        if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
       } else {
-        if (used >= 0)
+        if (ret >= 0)
             pkt.size = 0;
-        used = avcodec_receive_frame(audio_dec_ctx, frame);
-        if (used >= 0)
+        ret = avcodec_receive_frame(audio_dec_ctx, frame);
+        if (ret >= 0)
             got_frame = 1;
         }
     }
