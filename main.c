@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <libavcodec/avcodec.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/samplefmt.h>
 #include <libavutil/timestamp.h>
@@ -169,13 +170,19 @@ static int decode_packet(int *got_frame, int cached)
 
   if (pkt.stream_index == video_stream_idx) {
     /* decode video frame */
-    ret = avcodec_decode_video2(video_dec_ctx, frame, got_frame, &pkt);
+    // ret = avcodec_decode_video2(video_dec_ctx, frame, got_frame, &pkt);
+    ret = avcodec_send_packet(video_dec_ctx, &pkt);
     if (ret < 0) {
-      fprintf(stderr, "Error decoding video frame (%s)\n", av_err2str(ret));
+        fprintf(stderr, "codec: sending video packet failed");
+        return ret;
+    }
+    ret = avcodec_receive_frame(video_dec_ctx, frame);
+    if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
+      fprintf(stderr, "Error receiving video frame (%s)\n", av_err2str(ret));
       return ret;
     }
 
-    if (*got_frame) {
+    if (ret >= 0) {
 
       if (frame->width != width || frame->height != height ||
           frame->format != pix_fmt) {
@@ -269,8 +276,14 @@ static int decode_packet(int *got_frame, int cached)
     }
   } else if (pkt.stream_index == audio_stream_idx) {
     /* decode audio frame */
-    ret = avcodec_decode_audio4(audio_dec_ctx, frame, got_frame, &pkt);
+    // ret = avcodec_decode_audio4(audio_dec_ctx, frame, got_frame, &pkt);
+    ret = avcodec_send_packet(audio_dec_ctx, &pkt);
     if (ret < 0) {
+	    fprintf(stderr, "codec: sending audio packet failed");
+      return ret;
+    }
+	  ret = avcodec_receive_frame(audio_dec_ctx, frame);
+    if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
       fprintf(stderr, "Error decoding audio frame (%s)\n", av_err2str(ret));
       return ret;
     }
@@ -278,9 +291,8 @@ static int decode_packet(int *got_frame, int cached)
      * called again with the remainder of the packet data.
      * Sample: fate-suite/lossless-audio/luckynight-partial.shn
      * Also, some decoders might over-read the packet. */
-    decoded = FFMIN(ret, pkt.size);
-
-    if (*got_frame) {
+    if (ret >= 0) {
+      decoded = FFMIN(ret, pkt.size);
       printf("audio_frame%s n:%d nb_samples:%d pts:%s\n",
              cached ? "(cached)" : "",
              audio_frame_count++, frame->nb_samples,
@@ -304,9 +316,10 @@ static int decode_packet(int *got_frame, int cached)
 
   /* If we use frame reference counting, we own the data and need
    * to de-reference it when we don't use it anymore */
-  if (*got_frame)
+  if (ret)
     av_frame_unref(frame);
 
+  *got_frame = ret;
   return decoded;
 }
 
@@ -591,7 +604,7 @@ int main (int argc, char **argv)
     AVPacket orig_pkt = pkt;
     do {
       ret = decode_packet(&got_frame, 0);
-      if (ret < 0)
+      if (ret <= 0)
         break;
       pkt.data += ret;
       pkt.size -= ret;
