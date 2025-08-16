@@ -604,11 +604,11 @@ int main (int argc, char **argv)
     AVPacket orig_pkt = pkt;
     do {
       ret = decode_packet(&got_frame, 0);
-      if (ret < 0)
+      if (ret <= 0)
         break;
       pkt.data += ret;
       pkt.size -= ret;
-      printf("Packet size: %i", pkt.size);
+      printf("Packet size: %i\n", pkt.size);
     } while (pkt.size > 0);
     av_packet_unref(&orig_pkt);
   }
