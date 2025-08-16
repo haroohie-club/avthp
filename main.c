@@ -166,15 +166,26 @@ static int decode_packet(int *got_frame, int cached)
   int ret = 0;
   int decoded = pkt.size;
 
+  *got_frame = 0;
+
   if (pkt.stream_index == video_stream_idx) {
     /* decode video frame */
-    ret = avcodec_send_packet(video_dec_ctx, &pkt);
+    if (video_dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
+        video_dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+        used = avcodec_send_packet(video_dec_ctx, pkt);
+        if (used < 0 && used != AVERROR(EAGAIN) && used != AVERROR_EOF) {
+      } else {
+        if (used >= 0)
+            pkt->size = 0;
+        used = avcodec_receive_frame(video_dec_ctx, frame);
+        if (used >= 0)
+            got_frame = 1;
+        }
+    }
     if (ret < 0) {
       fprintf(stderr, "Error decoding video frame (%s)\n", av_err2str(ret));
       return ret;
     }
-
-    *got_frame = avcodec_receive_frame(video_dec_ctx, frame);
 
     if (*got_frame) {
 
@@ -270,12 +281,22 @@ static int decode_packet(int *got_frame, int cached)
     }
   } else if (pkt.stream_index == audio_stream_idx) {
     /* decode audio frame */
-    ret = avcodec_send_packet(audio_dec_ctx, &pkt);
+    if (audio_dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
+        audio_dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+        used = avcodec_send_packet(audio_dec_ctx, pkt);
+        if (used < 0 && used != AVERROR(EAGAIN) && used != AVERROR_EOF) {
+      } else {
+        if (used >= 0)
+            pkt->size = 0;
+        used = avcodec_receive_frame(audio_dec_ctx, frame);
+        if (used >= 0)
+            got_frame = 1;
+        }
+    }
     if (ret < 0) {
       fprintf(stderr, "Error decoding audio frame (%s)\n", av_err2str(ret));
       return ret;
     }
-    *got_frame = avcodec_receive_frame(audio_dec_ctx, frame);
     /* Some audio decoders decode only part of the packet, and have to be
      * called again with the remainder of the packet data.
      * Sample: fate-suite/lossless-audio/luckynight-partial.shn
