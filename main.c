@@ -283,7 +283,7 @@ static int decode_packet(int *got_frame, int cached)
       return ret;
     }
 	  ret = avcodec_receive_frame(audio_dec_ctx, frame);
-    if (ret < 0) {
+    if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
       fprintf(stderr, "Error decoding audio frame (%s)\n", av_err2str(ret));
       return ret;
     }
@@ -292,8 +292,7 @@ static int decode_packet(int *got_frame, int cached)
      * Sample: fate-suite/lossless-audio/luckynight-partial.shn
      * Also, some decoders might over-read the packet. */
     decoded = FFMIN(ret, pkt.size);
-
-    if (*got_frame) {
+    if (ret >= 0) {
       printf("audio_frame%s n:%d nb_samples:%d pts:%s\n",
              cached ? "(cached)" : "",
              audio_frame_count++, frame->nb_samples,
