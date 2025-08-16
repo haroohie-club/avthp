@@ -170,20 +170,20 @@ static int decode_packet(int *got_frame, int cached)
 
   if (pkt.stream_index == video_stream_idx) {
     /* decode video frame */
-    if (video_dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
-        video_dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        do {
-          ret = avcodec_send_packet(video_dec_ctx, &pkt);
-        } while (ret == AVERROR(EAGAIN));
+    do {
+      if (video_dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
+          video_dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {  
+        ret = avcodec_send_packet(video_dec_ctx, &pkt);
         if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
-      } else {
-        if (ret >= 0)
+        } else {
+          if (ret >= 0)
             pkt.size = 0;
-        ret = avcodec_receive_frame(video_dec_ctx, frame);
-        if (ret >= 0)
+          ret = avcodec_receive_frame(video_dec_ctx, frame);
+          if (ret >= 0)
             got_frame = 1;
         }
-    }
+      }
+    } while (ret == AVERROR(EAGAIN));
     if (ret < 0) {
       fprintf(stderr, "Error decoding video frame (%s)\n", av_err2str(ret));
       return ret;
@@ -285,9 +285,7 @@ static int decode_packet(int *got_frame, int cached)
     /* decode audio frame */
     if (audio_dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
         audio_dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        do {
-          ret = avcodec_send_packet(audio_dec_ctx, &pkt);
-        } while (ret == AVERROR(EAGAIN));
+        ret = avcodec_send_packet(audio_dec_ctx, &pkt);
         if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
       } else {
         if (ret >= 0)
