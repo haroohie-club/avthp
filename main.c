@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <avcodec.h>
+#include <libavcodec/avcodec.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/samplefmt.h>
 #include <libavutil/timestamp.h>
