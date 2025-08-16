@@ -608,7 +608,6 @@ int main (int argc, char **argv)
         break;
       pkt.data += ret;
       pkt.size -= ret;
-      printf("Packet size: %i\n", pkt.size);
     } while (pkt.size > 0);
     av_packet_unref(&orig_pkt);
   }
