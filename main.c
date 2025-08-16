@@ -298,8 +298,9 @@ static int decode_packet(int *got_frame, int cached)
              audio_frame_count++, frame->nb_samples,
              av_ts2timestr(frame->pts, &audio_dec_ctx->time_base));
 
+      printf("Hello before\n");
       if (swr_ctx) {
-        fprintf(stdout, "Hello swr_ctx\n");
+        printf("Hello swr_ctx\n");
         if (audio_buf_capacity - audio_buf_size < swr_get_out_samples(swr_ctx, frame->nb_samples)) {
           audio_buf_capacity += 10 * out_srate;
           audio_bufs[0] = realloc(audio_bufs[0], 2 * audio_buf_capacity);
